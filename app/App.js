@@ -1,139 +1,250 @@
-// Firefly Net v0.1 prototype: torch blinks on a pulse-coupled oscillator; camera brightness
-// spikes from OTHER phones nudge our phase so nearby phones converge (see src/sync.js).
+// Firefly Net v0.2 prototype. Pulse-coupled torch sync with startup lag calibration, debug screen, log sharing.
+// All event times are "perceived" times (camera frame timestamps mapped to the JS clock), see src/sync.js.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, Pressable, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, Pressable, StatusBar, ScrollView, useWindowDimensions } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Camera, useCameraPermission, useFrameOutput, CommonResolutions } from 'react-native-vision-camera';
-import { Oscillator, Detector, DEFAULTS } from './src/sync';
+import { Oscillator, Detector, DEFAULTS, correlateLag, makePattern, median, mad } from './src/sync';
 
-const GRAPH_N = 90;
+const VERSION = '0.2';
 const now = () => performance.now();
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const TL_MS = 4000;          // timeline window
+const CAL_RUNS = 4, SLOT = 100, MIN_R = 0.6;
 
 export default function App() {
   useKeepAwake();
+  const { width } = useWindowDimensions();
   const { hasPermission, requestPermission } = useCameraPermission();
   const [running, setRunning] = useState(false);
   const [coupling, setCoupling] = useState(DEFAULTS.coupling);
-  const [useCtl, setUseCtl] = useState(true); // torch via controller.setTorchMode (fast) vs torchMode prop
-  const [torchProp, setTorchProp] = useState('off');
+  const [aeLock, setAeLock] = useState(true);
   const [flashOn, setFlashOn] = useState(false);
-  const [ui, setUi] = useState({ fps: 0, luma: 0, base: 0, thr: 0, det: 0, ign: 0, phase: 0, lag: 0, echo: 0, graph: [] });
+  const [torchProp, setTorchProp] = useState('off');
+  const [ui, setUi] = useState(null);
   const camRef = useRef(null);
-  const st = useRef(null);
-  if (!st.current) st.current = { osc: new Oscillator({}, now()), det: new Detector(), graph: [], frames: [], dets: 0, ign: 0, torch: false, echo: 0, echoAwait: false, last: {} };
+  const S = useRef(null);
+  if (!S.current) S.current = { mode: 'idle', det: new Detector(), osc: null, frames: [], tsOff: null, camDelays: [], log: [], events: [], offs: [],
+    echoSamples: [], cmds: 0, echoes: 0, ext: 0, calib: [], calSamples: null, lagSrc: '-', warn: '', luma: 0, thr: 0, base: 0, echoForCmd: true };
 
   useEffect(() => { if (!hasPermission) requestPermission(); }, [hasPermission]);
-  useEffect(() => { st.current.osc.cfg.coupling = coupling; }, [coupling]);
+  useEffect(() => { if (S.current.osc) S.current.osc.cfg.coupling = coupling; }, [coupling]);
+
+  const log = (type, ...v) => { const s = S.current; if (s.log.length < 400000) s.log.push(`${now().toFixed(1)},${type},${v.map(x => typeof x === 'number' ? +x.toFixed(2) : x).join(',')}`); };
+  const ev = (type, t, t2) => { const s = S.current; s.events.push({ type, t, t2 }); if (s.events.length > 200) s.events.shift(); };
 
   const setTorch = useCallback((on) => {
-    const s = st.current; s.torch = on; setFlashOn(on);
-    const ctl = camRef.current?.controller;
-    if (useCtl && ctl) ctl.setTorchMode(on ? 'on' : 'off').catch(() => setTorchProp(on ? 'on' : 'off'));
+    const s = S.current; setFlashOn(on); const ctl = camRef.current?.controller;
+    if (ctl) { const t0 = now(); ctl.setTorchMode(on ? 'on' : 'off').then(() => log('torch_ack', on ? 1 : 0, now() - t0)).catch(() => setTorchProp(on ? 'on' : 'off')); }
     else setTorchProp(on ? 'on' : 'off');
-  }, [useCtl]);
+  }, []);
 
-  // oscillator loop (JS thread, ~5ms resolution)
-  useEffect(() => {
-    if (!running) return;
-    const s = st.current; s.det.reset(); s.osc = new Oscillator({ coupling }, now()); s.dets = 0; s.ign = 0;
-    let offT = null;
-    const iv = setInterval(() => {
-      const t = now();
-      if (s.osc.tick(t)) { setTorch(true); s.echoAwait = true; clearTimeout(offT); offT = setTimeout(() => setTorch(false), DEFAULTS.flashMs); }
-    }, 4);
-    const ui = setInterval(() => {
-      const f = s.frames, fps = f.length > 1 ? 1000 * (f.length - 1) / (f[f.length - 1] - f[0]) : 0;
-      setUi({ fps, ...s.last, det: s.dets, ign: s.ign, phase: ((s.osc.phase(now()) % 1) + 1) % 1, lag: s.osc.torchLagMs, echo: s.echo, nudges: s.osc.nudges, graph: s.graph.slice() });
-    }, 100);
-    return () => { clearInterval(iv); clearInterval(ui); clearTimeout(offT); setTorch(false); };
-  }, [running]);
-
-  // called on JS thread for every camera frame with mean luma
-  const onLuma = useCallback((luma) => {
-    const s = st.current, t = now();
-    s.frames.push(t); if (s.frames.length > 30) s.frames.shift();
-    const fi = s.frames.length > 1 ? (t - s.frames[0]) / (s.frames.length - 1) : 33;
-    const camLat = 1.5 * fi + 20; // est. exposure-mid -> JS delivery latency
-    const r = s.det.push(luma, t);
-    s.last = { luma, base: s.det.base, thr: r.threshold };
-    let mark = 0;
-    if (r.spike && running) {
-      if (s.osc.inSelfWindow(t)) { // our own torch reflection: use it to self-calibrate torch lag
-        s.ign++; mark = 1;
-        if (s.echoAwait) { s.echoAwait = false; const echo = t - s.osc.lastFire; s.echo = echo;
-          const lag = Math.min(300, Math.max(0, echo - camLat)); s.osc.torchLagMs = s.osc.torchLagMs ? s.osc.torchLagMs * 0.8 + lag * 0.2 : lag; }
-      } else { s.dets++; mark = 2; s.osc.onFlash(t, camLat); }
+  // ---------- per-frame (JS thread) ----------
+  const onFrame = useCallback((luma, tsRaw) => {
+    const s = S.current, recv = now();
+    // map camera timestamp (ns on Android) to JS clock: offset = min(recv - ts) over recent frames
+    let ts = tsRaw > 1e11 ? tsRaw / 1e6 : tsRaw > 0 ? tsRaw : recv;
+    const d = recv - ts;
+    if (s.tsOff == null || d < s.tsOff || d - s.tsOff > 2000) s.tsOff = d; else s.tsOff += 0.002; // slow upward leak
+    const tf = ts + s.tsOff;
+    s.camDelays.push(recv - tf); if (s.camDelays.length > 60) s.camDelays.shift();
+    s.frames.push(tf); if (s.frames.length > 31) s.frames.shift();
+    const fi = s.frames.length > 1 ? (s.frames[s.frames.length - 1] - s.frames[0]) / (s.frames.length - 1) : 33;
+    s.fi = fi;
+    const r = s.det.push(luma, tf); s.luma = luma; s.thr = r.threshold; s.base = s.det.base;
+    log('frame', tf, luma, s.det.base, r.threshold, recv - tf);
+    if (s.calSamples) s.calSamples.push({ t: tf, l: luma });
+    if (s.mode !== 'run' || !r.spike) return;
+    const o = s.osc, e = o.expectedEcho(), jit = s.echoSamples.length >= 5 ? mad(s.echoSamples) : 20;
+    const m = Math.max(1.5 * fi, 3 * jit, 40);
+    if (!s.echoForCmd && Math.abs(tf - e) <= m) { // our own torch reflection
+      s.echoForCmd = true; s.echoes++; const sample = tf - o.lastCmd;
+      s.echoSamples.push(sample); if (s.echoSamples.length > 15) s.echoSamples.shift();
+      if (s.echoSamples.length >= 5) { o.lagMs = median(s.echoSamples); s.lagSrc = 'live echo'; }
+      ev('echo', tf); log('echo', tf, sample, o.lagMs);
+    } else {
+      const off = o.offsetOf(tf), shift = o.onFlash(tf); s.ext++;
+      s.offs.push({ t: tf, off }); if (s.offs.length > 60) s.offs.shift();
+      ev('ext', tf); log('ext', tf, off, shift, o.adj);
     }
-    s.graph.push([luma, mark]); if (s.graph.length > GRAPH_N) s.graph.shift();
-  }, [running]);
+  }, []);
 
   const frameOutput = useFrameOutput({
-    targetResolution: CommonResolutions.VGA_4_3,
-    pixelFormat: 'yuv',
-    dropFramesWhileBusy: true,
+    targetResolution: CommonResolutions.VGA_4_3, pixelFormat: 'yuv', dropFramesWhileBusy: true,
     onFrame: useCallback((frame) => {
       'worklet';
       try {
-        // Y (luma) plane, sampled on a sparse grid over the central 60% of the image
         let buf, w = frame.width, h = frame.height, row = frame.bytesPerRow;
         if (frame.isPlanar) { const p = frame.getPlanes()[0]; buf = p.getPixelBuffer(); w = p.width; h = p.height; row = p.bytesPerRow; }
         else buf = frame.getPixelBuffer();
         const px = new Uint8Array(buf); let sum = 0, n = 0;
         const y0 = Math.floor(h * 0.2), y1 = Math.floor(h * 0.8), x0 = Math.floor(w * 0.2), x1 = Math.floor(w * 0.8);
         for (let y = y0; y < y1; y += 8) { const o = y * row; for (let x = x0; x < x1; x += 8) { sum += px[o + x]; n++; } }
-        scheduleOnRN(onLuma, n ? sum / n : 0);
+        scheduleOnRN(onFrame, n ? sum / n : 0, frame.timestamp);
       } finally { frame.dispose(); }
-    }, [onLuma]),
+    }, [onFrame]),
   });
 
-  if (!hasPermission) return <View style={st_.c}><Text style={st_.t}>Camera permission needed</Text><Btn label="Grant" onPress={requestPermission} /></View>;
-  const g = ui.graph, gmax = Math.max(1, ...g.map(v => v[0]));
+  // ---------- calibration + run loop ----------
+  useEffect(() => {
+    if (!running) return;
+    const s = S.current; let alive = true, iv = null, offT = null;
+    Object.assign(s, { mode: 'warm', det: new Detector(), offs: [], events: [], echoSamples: [], calib: [], cmds: 0, echoes: 0, ext: 0, warn: '', lagSrc: '-', log: [] });
+    s.log.push(`# Firefly Net v${VERSION} log, started ${new Date().toISOString()}, perf_now=${now().toFixed(1)}`);
+    s.log.push('# t_ms(js clock),type,values... | frame: tf,luma,base,thr,camDelay | cmd: on,lagMs | torch_ack: on,apiMs | echo: tf,sampleMs,lagMs | ext: tf,offsetMs(+ = other later),shiftMs,adjMs | calib: run,lagMs,r | lag: lagMs,source');
+    (async () => {
+      await sleep(1500); if (!alive) return;
+      const ctl = camRef.current?.controller;
+      if (aeLock && ctl) { try { await ctl.lockCurrentExposure(); log('info', 'exposure_locked'); } catch (e) { log('info', 'exposure_lock_failed'); } }
+      s.mode = 'calib';
+      for (let k = 0; k < CAL_RUNS && alive; k++) {
+        const bits = makePattern(), cmds = []; s.calSamples = []; const t0 = now();
+        for (let i = 0; i < bits.length; i++) { const target = t0 + i * SLOT; await sleep(Math.max(0, target - now()));
+          if (i === 0 || bits[i] !== bits[i - 1]) { cmds.push({ t: now(), on: bits[i] }); setTorch(!!bits[i]); log('cmd', bits[i], -1); } }
+        await sleep(Math.max(0, t0 + bits.length * SLOT - now())); cmds.push({ t: now(), on: 0 }); setTorch(false);
+        await sleep(800);
+        const res = correlateLag(s.calSamples.filter(x => x.t > t0 - 100), cmds); s.calSamples = null;
+        s.calib.push(res); log('calib', k, res.lag, res.r);
+        await sleep(300);
+      }
+      if (!alive) return;
+      const good = s.calib.filter(c => c.r >= MIN_R).map(c => c.lag);
+      const osc = new Oscillator({ coupling }, now());
+      if (good.length >= 2) { osc.lagMs = median(good); s.lagSrc = `calibration (${good.length}/${CAL_RUNS} ok)`; s.calJitter = good.length > 1 ? mad(good) : 0; }
+      else { s.warn = 'Own flash not visible. Point the camera at a wall or ceiling (~0.5-1 m) and restart.'; s.lagSrc = `default (calibration failed)`; }
+      log('lag', osc.lagMs, s.lagSrc);
+      s.osc = osc; s.det = new Detector(); s.echoForCmd = true; s.mode = 'run';
+      iv = setInterval(() => {
+        const t = now();
+        if (osc.tick(t)) {
+          if (!s.echoForCmd) log('echo_missed', osc.lastCmd);
+          s.cmds++; s.echoForCmd = false; setTorch(true); log('cmd', 1, osc.lagMs); ev('cmd', t, osc.expectedEcho());
+          clearTimeout(offT); offT = setTimeout(() => { setTorch(false); log('cmd', 0, osc.lagMs); }, DEFAULTS.flashMs);
+        }
+      }, 3);
+    })();
+    const uiT = setInterval(() => {
+      const t = now(), o = s.osc;
+      const fps = s.fi ? 1000 / s.fi : 0, rec = s.offs.filter(x => t - x.t < 4000).slice(-5).map(x => x.off), med = median(rec);
+      const lockBand = Math.max(35, 1.2 * (s.fi || 33));
+      let state = 'No other phone seen yet';
+      if (s.mode === 'warm') state = 'Warming up camera...'; else if (s.mode === 'calib') state = `Calibrating ${s.calib.length + 1}/${CAL_RUNS}: keep still`;
+      else if (rec.length) state = Math.abs(med) <= lockBand ? `LOCKED (within ${Math.abs(med).toFixed(0)} ms)` : med > 0 ? `AHEAD by ${med.toFixed(0)} ms (other phone flashes later)` : `BEHIND by ${(-med).toFixed(0)} ms (other phone flashes earlier)`;
+      const echoRate = s.cmds > 3 ? s.echoes / s.cmds : null;
+      let warn = s.warn; if (s.mode === 'run' && echoRate != null && echoRate < 0.3 && !warn) warn = 'Own flash rarely visible: point camera at a wall/ceiling so lag stays calibrated.';
+      setUi({ t, fps, state, warn, mode: s.mode, lag: o?.lagMs, lagSrc: s.lagSrc, jitter: s.echoSamples.length >= 5 ? mad(s.echoSamples) : s.calJitter,
+        cam: median(s.camDelays), echoRate, cmds: s.cmds, ext: s.ext, adj: o?.adj ?? 0, phase: o ? o.phase(t) : 0, luma: s.luma, thr: s.thr, base: s.base,
+        calib: s.calib.slice(), events: s.events.filter(e => t - e.t < TL_MS + 500), offs: s.offs.slice(-40) });
+    }, 120);
+    return () => { alive = false; clearInterval(iv); clearInterval(uiT); clearTimeout(offT); s.mode = 'idle'; s.calSamples = null; setTorch(false); };
+  }, [running]);
+
+  const shareLog = async () => {
+    try {
+      const f = new File(Paths.cache, `firefly-net-log-${Date.now()}.csv`); f.create({ overwrite: true }); f.write(S.current.log.join('\n'));
+      await Sharing.shareAsync(f.uri, { mimeType: 'text/csv', dialogTitle: 'Share Firefly Net log' });
+    } catch (e) { S.current.warn = 'Share failed: ' + e.message; }
+  };
+
+  if (!hasPermission) return <View style={st.c}><Text style={st.t}>Camera permission needed</Text><Btn label="Grant" onPress={requestPermission} /></View>;
+  const W = width - 24;
   return (
-    <View style={[st_.c, flashOn && running && { backgroundColor: '#fff' }]}>
+    <View style={[st.c, flashOn && running && { backgroundColor: '#fff' }]}>
       <StatusBar hidden />
-      <Camera ref={camRef} style={st_.cam} device="back" isActive={running} outputs={[frameOutput]}
-        torchMode={useCtl ? undefined : torchProp} onError={(e) => console.warn(e)} />
-      <Text style={st_.title}>Firefly Net v0.1</Text>
-      <View style={st_.box}>
-        <Text style={st_.m}>fps {ui.fps.toFixed(1)}   luma {ui.luma?.toFixed(1)}   base {ui.base?.toFixed(1)}   thr +{ui.thr?.toFixed(1)}</Text>
-        <Text style={st_.m}>detections {ui.det}   own-echo ignored {ui.ign}   nudges {ui.nudges ?? 0}</Text>
-        <Text style={st_.m}>phase {ui.phase.toFixed(2)}   torch {flashOn ? 'ON' : 'off'}   echo {ui.echo.toFixed(0)}ms   lag-comp {ui.lag.toFixed(0)}ms</Text>
-        <View style={st_.phaseBar}><View style={[st_.phaseFill, { width: `${ui.phase * 100}%` }]} /></View>
-        <View style={st_.graph}>
-          {g.map(([v, m], i) => <View key={i} style={{ width: 3, marginRight: 1, height: 2 + 76 * v / gmax, backgroundColor: m === 2 ? '#ffd23f' : m === 1 ? '#666' : '#4fc3f7' }} />)}
+      <Camera ref={camRef} style={st.cam} device="back" isActive={running} outputs={[frameOutput]} torchMode={torchProp} />
+      <ScrollView style={{ width: '100%' }} contentContainerStyle={{ padding: 12, paddingTop: 30 }}>
+        <Text style={st.title}>Firefly Net v{VERSION}</Text>
+        {ui && <>
+          <Text style={[st.state, ui.state.startsWith('LOCKED') && { color: '#7CFC8A' }]}>{ui.state}</Text>
+          {!!ui.warn && <Text style={st.warn}>⚠ {ui.warn}</Text>}
+          <Panel title="Timeline (last 4 s, newest on the right)">
+            <Timeline ui={ui} W={W - 20} />
+            <Text style={st.leg}><Text style={{ color: '#ff9f1c' }}>■ My torch command</Text>   <Text style={{ color: '#ffe08a' }}>□ when my light should appear (command + lag)</Text>{'\n'}<Text style={{ color: '#999' }}>| my own flash seen by camera</Text>   <Text style={{ color: '#ffd23f' }}>| other phone's flash seen</Text></Text>
+          </Panel>
+          <Panel title="Offset to other phone (ms) over time">
+            <OffsetChart offs={ui.offs} W={W - 20} band={Math.max(35, 1.2 * (1000 / (ui.fps || 30)))} />
+            <Text style={st.leg}>Each dot = one detected flash. Above 0: other phone is LATER than me. Below 0: EARLIER. Green band = locked. Goal: dots settle in the band.</Text>
+          </Panel>
+          <Panel title="Delays">
+            <Row k="Torch lag (command → my light seen)" v={ui.lag != null ? `${ui.lag.toFixed(0)} ms` : '-'} />
+            <Row k="  source" v={ui.lagSrc} />
+            <Row k="  jitter (±, median abs dev)" v={ui.jitter != null ? `${ui.jitter.toFixed(0)} ms` : '-'} />
+            <Row k="Camera → app delay" v={isFinite(ui.cam) ? `${ui.cam.toFixed(0)} ms` : '-'} />
+            <Row k="Camera fps" v={ui.fps.toFixed(1)} />
+            <Row k="Own flash seen" v={ui.echoRate != null ? `${(ui.echoRate * 100).toFixed(0)}% of flashes` : '-'} />
+            <Row k="Calibration runs (lag / match)" v={ui.calib.map(c => `${c.lag}ms/${c.r.toFixed(2)}`).join('  ') || '-'} />
+          </Panel>
+          <Panel title="Counters">
+            <Row k="My flashes / other flashes seen" v={`${ui.cmds} / ${ui.ext}`} />
+            <Row k="Pending correction to next flash" v={`${ui.adj.toFixed(0)} ms`} />
+            <Row k="Brightness now / baseline / trigger" v={`${ui.luma.toFixed(0)} / ${(ui.base ?? 0).toFixed(0)} / +${ui.thr.toFixed(0)}`} />
+          </Panel>
+        </>}
+        <View style={st.row}><Btn big label={running ? 'Stop' : 'Start'} onPress={() => setRunning(r => !r)} /></View>
+        <View style={st.row}>
+          <Btn label="Share log" onPress={shareLog} />
+          <Btn label={`Lock exposure: ${aeLock ? 'on' : 'off'}`} onPress={() => setAeLock(a => !a)} />
         </View>
-        <Text style={st_.s}>yellow = external flash (nudge), grey = own flash echo (ignored)</Text>
-      </View>
-      <View style={st_.row}>
-        <Btn label={running ? 'Stop' : 'Start'} onPress={() => setRunning(r => !r)} big />
-      </View>
-      <View style={st_.row}>
-        <Btn label="coupling -" onPress={() => setCoupling(c => Math.max(0.02, +(c - 0.05).toFixed(2)))} />
-        <Text style={st_.t}>{coupling.toFixed(2)}</Text>
-        <Btn label="coupling +" onPress={() => setCoupling(c => Math.min(0.8, +(c + 0.05).toFixed(2)))} />
-        <Btn label={useCtl ? 'torch: ctl' : 'torch: prop'} onPress={() => setUseCtl(u => !u)} />
-      </View>
+        <View style={st.row}>
+          <Btn label="−" onPress={() => setCoupling(c => Math.max(0.05, +(c - 0.05).toFixed(2)))} />
+          <Text style={st.t}>correction strength {coupling.toFixed(2)}</Text>
+          <Btn label="+" onPress={() => setCoupling(c => Math.min(1, +(c + 0.05).toFixed(2)))} />
+        </View>
+        <Text style={st.leg}>Tip: Start both phones, point each camera at a wall/ceiling during the first ~8 s (calibration), then face the phones toward each other. Exposure lock applies on next Start.</Text>
+      </ScrollView>
     </View>
   );
 }
 
-const Btn = ({ label, onPress, big }) => (
-  <Pressable onPress={onPress} style={[st_.btn, big && st_.big]}><Text style={[st_.bt, big && { fontSize: 22 }]}>{label}</Text></Pressable>
-);
+function Timeline({ ui, W }) {
+  const x = (t) => W * (1 - (ui.t - t) / TL_MS);
+  const ev = ui.events.filter(e => x(e.t) > -20);
+  return (
+    <View style={{ width: W, height: 70, backgroundColor: '#0b1020', overflow: 'hidden' }}>
+      <Text style={[st.tl, { top: 2 }]}>me</Text><Text style={[st.tl, { top: 42 }]}>camera</Text>
+      {ev.filter(e => e.type === 'cmd').map((e, i) => <View key={'c' + i}>
+        <View style={{ position: 'absolute', left: x(e.t), top: 4, width: Math.max(2, W * DEFAULTS.flashMs / TL_MS), height: 14, backgroundColor: '#ff9f1c' }} />
+        <View style={{ position: 'absolute', left: x(e.t2), top: 20, width: Math.max(2, W * DEFAULTS.flashMs / TL_MS), height: 14, borderColor: '#ffe08a', borderWidth: 1 }} />
+      </View>)}
+      {ev.filter(e => e.type !== 'cmd').map((e, i) => <View key={'d' + i} style={{ position: 'absolute', left: x(e.t), top: 38, width: 3, height: 30, backgroundColor: e.type === 'ext' ? '#ffd23f' : '#888' }} />)}
+    </View>
+  );
+}
 
-const st_ = StyleSheet.create({
-  c: { flex: 1, backgroundColor: '#05070d', alignItems: 'center', justifyContent: 'center', padding: 12 },
-  cam: { width: 120, height: 160, position: 'absolute', top: 40, right: 12, borderRadius: 8, overflow: 'hidden' },
-  title: { color: '#ffd23f', fontSize: 24, fontWeight: '700', marginBottom: 12 },
-  box: { backgroundColor: '#000a', padding: 10, borderRadius: 10, width: '100%' },
-  m: { color: '#cde', fontFamily: 'monospace', fontSize: 12, marginBottom: 3 },
-  s: { color: '#789', fontSize: 11, marginTop: 4 },
-  t: { color: '#fff', fontSize: 16, marginHorizontal: 8 },
-  phaseBar: { height: 8, backgroundColor: '#223', borderRadius: 4, marginVertical: 6 },
-  phaseFill: { height: 8, backgroundColor: '#ffd23f', borderRadius: 4 },
-  graph: { height: 80, flexDirection: 'row', alignItems: 'flex-end', backgroundColor: '#0b1020', overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' },
+function OffsetChart({ offs, W, band }) {
+  const H = 110, R = 500, y = (o) => H / 2 - (H / 2) * Math.max(-1, Math.min(1, o / R));
+  return (
+    <View style={{ width: W, height: H, backgroundColor: '#0b1020' }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, top: y(band), height: y(-band) - y(band), backgroundColor: '#1f4d2a' }} />
+      <View style={{ position: 'absolute', left: 0, right: 0, top: H / 2, height: 1, backgroundColor: '#456' }} />
+      <Text style={[st.tl, { top: 0 }]}>+500 later</Text><Text style={[st.tl, { bottom: 0 }]}>-500 earlier</Text>
+      {offs.map((o, i) => <View key={i} style={{ position: 'absolute', left: (W - 8) * (i + 1) / Math.max(offs.length, 1) - 3, top: y(o.off) - 3, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ffd23f' }} />)}
+      {offs.length > 0 && <Text style={[st.tl, { right: 4, left: undefined, top: 0, color: '#ffd23f' }]}>{offs[offs.length - 1].off.toFixed(0)} ms</Text>}
+    </View>
+  );
+}
+
+const Panel = ({ title, children }) => <View style={st.box}><Text style={st.ph}>{title}</Text>{children}</View>;
+const Row = ({ k, v }) => <View style={st.kv}><Text style={st.k}>{k}</Text><Text style={st.v}>{v}</Text></View>;
+const Btn = ({ label, onPress, big }) => <Pressable onPress={onPress} style={[st.btn, big && st.big]}><Text style={[st.bt, big && { fontSize: 22 }]}>{label}</Text></Pressable>;
+
+const st = StyleSheet.create({
+  c: { flex: 1, backgroundColor: '#05070d' },
+  cam: { width: 90, height: 120, position: 'absolute', top: 30, right: 12, borderRadius: 8, overflow: 'hidden', zIndex: 2 },
+  title: { color: '#ffd23f', fontSize: 22, fontWeight: '700', marginBottom: 8 },
+  state: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 6, marginRight: 100 },
+  warn: { color: '#ff8a80', fontSize: 14, marginBottom: 6, fontWeight: '600' },
+  box: { backgroundColor: '#000c', padding: 10, borderRadius: 10, marginBottom: 10 },
+  ph: { color: '#9cf', fontWeight: '700', marginBottom: 6 },
+  leg: { color: '#9ab', fontSize: 11, marginTop: 6 },
+  tl: { position: 'absolute', left: 4, color: '#678', fontSize: 9, zIndex: 1 },
+  kv: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
+  k: { color: '#9ab', fontSize: 12, flex: 1 }, v: { color: '#fff', fontSize: 12, fontFamily: 'monospace' },
+  t: { color: '#fff', fontSize: 14, marginHorizontal: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', marginTop: 10, flexWrap: 'wrap', justifyContent: 'center' },
   btn: { backgroundColor: '#1d2a44', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, margin: 4 },
   big: { backgroundColor: '#ffb300', paddingHorizontal: 50, paddingVertical: 16 },
   bt: { color: '#fff', fontWeight: '600' },
