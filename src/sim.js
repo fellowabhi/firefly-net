@@ -108,7 +108,11 @@ export class Sim {
     const n = this.n; let cs = 0, sn = 0; const B = 100, hist = new Uint32Array(B);
     for (let i = 0; i < n; i++) { const a = 2 * Math.PI * this.phase[i]; cs += Math.cos(a); sn += Math.sin(a); hist[Math.min(B - 1, Math.floor(this.phase[i] * B))]++; }
     let best = 0; const w = 10; for (let s = 0; s < B; s++) { let c = 0; for (let k = 0; k < w; k++) c += hist[(s + k) % B]; if (c > best) best = c; }
-    return { R: Math.hypot(cs, sn) / n, cluster: best / n };
+    // actual light alignment: circular std-dev of the most recent light-on times (ms)
+    const P = this.cfg.periodMs; let c2 = 0, s2 = 0, m = 0;
+    for (let i = 0; i < n; i++) if (this.t - this.lightOn[i] < 2 * P) { const a = 2 * Math.PI * (this.lightOn[i] % P) / P; c2 += Math.cos(a); s2 += Math.sin(a); m++; }
+    const Rl = m ? Math.hypot(c2, s2) / m : 0, spread = Rl > 0 ? Math.sqrt(-2 * Math.log(Math.max(1e-9, Rl))) * P / (2 * Math.PI) : P;
+    return { R: Math.hypot(cs, sn) / n, cluster: best / n, flashSpreadMs: spread };
   }
   sample() { const m = this.metrics(); this.history.push({ t: this.t, ...m }); if (this.syncTime === null && m.cluster >= 0.9) this.syncTime = this.t; return m; }
 }

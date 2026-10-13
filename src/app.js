@@ -25,7 +25,7 @@ function render() {
   ctx.globalCompositeOperation = 'source-over';
   const m = sim.history.at(-1) || sim.metrics(), st = sim.syncTime;
   $('stats').textContent = `t = ${(sim.t / 1000).toFixed(1)} s   phones ${sim.n} (avg sees ${sim.avgNeighbors.toFixed(0)})\n` +
-    `order R = ${m.R.toFixed(3)}   synced cluster ${(m.cluster * 100).toFixed(1)}%\n` + `time to 90% sync: ${st === null ? '—' : (st / 1000).toFixed(1) + ' s'}\n` +
+    `order R = ${m.R.toFixed(3)}   synced cluster ${(m.cluster * 100).toFixed(1)}%\n` + `flash timing spread (σ) ${m.flashSpreadMs.toFixed(0)} ms\n` + `time to 90% sync: ${st === null ? '—' : (st / 1000).toFixed(1) + ' s'}\n` +
     `flashes ${sim.flashes}  detections ${sim.detections}  false ${sim.falseDet}`;
   drawChart();
 }
