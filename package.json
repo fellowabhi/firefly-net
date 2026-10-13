@@ -1,0 +1,3 @@
+{ "name": "firefly-net", "version": "0.1.0", "private": true, "type": "module",
+  "description": "Firefly Net: browser simulator for camera+flashlight firefly-style phone sync",
+  "scripts": { "start": "python3 -m http.server 8173", "bench": "node bench.mjs" } }

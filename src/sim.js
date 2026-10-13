@@ -1,4 +1,4 @@
-// Lumisync core simulation: pulse-coupled oscillators (Mirollo-Strogatz style) with
+// Firefly Net core simulation: pulse-coupled oscillators (Mirollo-Strogatz style) with
 // realistic phone flash/camera pipeline delays. DOM-free so it runs in Node too.
 export const DEFAULTS = {
   seed: 42, n: 1500, iosRatio: 0.5, layout: 'bowl', // 'bowl' | 'grid'

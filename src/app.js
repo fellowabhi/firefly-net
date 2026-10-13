@@ -54,5 +54,5 @@ $('fit').onclick = fit; $('toggleCfg').onclick = () => $('cfg').classList.toggle
 addEventListener('resize', resize);
 const q = new URLSearchParams(location.search); toForm(); resize(); reset();
 if (q.has('autoplay')) { running = true; $('play').textContent = '⏸ Pause'; if (q.has('speed')) $('speed').value = q.get('speed'); }
-window.lumisync = { get sim() { return sim; } };
+window.fireflyNet = { get sim() { return sim; } };
 requestAnimationFrame(loop);
