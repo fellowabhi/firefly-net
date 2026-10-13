@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Lumisync – firefly sync simulator</title><link rel="stylesheet" href="src/style.css"></head><body>
+<header><b>✨ Lumisync</b><span>firefly-style flash sync, camera + flashlight only, no network</span><button id="toggleCfg">⚙ Config</button></header>
+<main>
+<aside id="cfg">
+ <h3>Crowd</h3>
+ <label>Phones <input type="number" id="n" min="10" max="10000"></label>
+ <label>iPhone share <input type="range" id="iosRatio" min="0" max="1" step="0.05"><output></output></label>
+ <label>Layout <select id="layout"><option value="bowl">Seating bowl</option><option value="grid">Grid</option></select></label>
+ <label>Seed <input type="number" id="seed"></label>
+ <h3>Camera / detection</h3>
+ <label>View range (m) <input type="number" id="radiusM" min="1" step="1"></label>
+ <label>Camera FOV (°) <input type="number" id="fovDeg" min="10" max="360"></label>
+ <label>Aim randomness ±° <input type="number" id="aimJitterDeg" min="0" max="180"></label>
+ <label>Detection prob <input type="range" id="detectProb" min="0.05" max="1" step="0.05"><output></output></label>
+ <label>False detections /s <input type="number" id="falsePerSec" min="0" step="0.01"></label>
+ <h3>Protocol</h3>
+ <label>Flash period (ms) <input type="number" id="periodMs" min="200" step="50"></label>
+ <label>Flash length (ms) <input type="number" id="flashMs" min="10" step="10"></label>
+ <label>Coupling ε <input type="range" id="coupling" min="0.01" max="0.5" step="0.01"><output></output></label>
+ <label>Refractory (phase) <input type="range" id="refractory" min="0" max="0.6" step="0.05"><output></output></label>
+ <label><input type="checkbox" id="compensate"> Latency compensation (self-calibrated torch + reachback)</label>
+ <label>Clock drift ±ppm <input type="number" id="driftPpm" min="0"></label>
+ <label>Scheduling jitter ±ms <input type="number" id="jitterMs" min="0"></label>
+ <h3>Android <small>(assumed ranges)</small></h3>
+ <div class="pair">Torch latency ms <input type="number" id="android.torchMin"> – <input type="number" id="android.torchMax"></div>
+ <label>Camera fps <select id="android.fps"><option>30</option><option>60</option></select></label>
+ <div class="pair">Processing ms <input type="number" id="android.procMin"> – <input type="number" id="android.procMax"></div>
+ <h3>iPhone <small>(native app, assumed ranges)</small></h3>
+ <div class="pair">Torch latency ms <input type="number" id="ios.torchMin"> – <input type="number" id="ios.torchMax"></div>
+ <label>Camera fps <select id="ios.fps"><option>30</option><option>60</option></select></label>
+ <div class="pair">Processing ms <input type="number" id="ios.procMin"> – <input type="number" id="ios.procMax"></div>
+ <label><input type="checkbox" id="colorPlat" checked> Color by platform</label>
+ <button id="apply" class="primary">Apply &amp; reset</button> <button id="defaults">Defaults</button>
+</aside>
+<section id="view"><canvas id="cv"></canvas>
+ <div id="hud"><div id="stats"></div><canvas id="chart" width="300" height="90"></canvas>
+  <div class="ctl"><button id="play">▶ Start</button><button id="reset">↺ Reset</button>
+  <label>Speed <select id="speed"><option>0.25</option><option>0.5</option><option selected>1</option><option>2</option><option>5</option><option>10</option></select>×</label><button id="fit">⤢ Fit</button></div></div>
+</section></main>
+<script type="module" src="src/app.js"></script></body></html>
