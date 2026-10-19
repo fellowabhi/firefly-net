@@ -1,0 +1,10 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+group = 'expo.modules.fireflynative'
+version = '0.3.0'
+android {
+  namespace "expo.modules.fireflynative"
+  defaultConfig { versionCode 1; versionName "0.3.0" }
+}

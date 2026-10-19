@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05070a">
+<title>Firefly Net · UI mockup</title>
+<style>
+:root{
+  --bg:#05070a; --panel:#0d1217; --panel2:#0f151b; --tile:#151c23; --tile2:#1b232b; --line:#1b2430; --acc:rgba(200,255,77,.13); --txt:#e8eef2; --dim:#7d8a96; --faint:#4a5560;
+  --ff:#c8ff4d; --ff2:#9dff6a; --amber:#ffb84a; --red:#ff5a5a; --blue:#5ad1ff;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#000}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);display:flex;justify-content:center;-webkit-font-smoothing:antialiased;overflow:hidden}
+.app{position:relative;width:100%;max-width:430px;height:100vh;height:100dvh;background:radial-gradient(120% 60% at 50% 38%,#0b1410 0%,var(--bg) 60%);overflow:hidden;display:flex;flex-direction:column}
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;z-index:3}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;letter-spacing:.2px;font-size:16px}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--ff);box-shadow:0 0 10px var(--ff),0 0 22px rgba(200,255,77,.5)}
+.brand span{color:var(--dim);font-weight:500}
+.seg{display:flex;background:var(--tile);border-radius:999px;padding:3px;gap:2px}
+.seg button{all:unset;cursor:pointer;font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;color:var(--dim);transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.seg button.on{background:var(--acc);color:var(--ff);box-shadow:0 0 14px rgba(200,255,77,.08)}
+.seg.sm{padding:2px}.seg.sm button{font-size:10.5px;padding:3px 8px;min-width:34px;text-align:center}
+.ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic.s{width:13px;height:13px}
+.spin{animation:spin 1.6s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.chips{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--panel);color:var(--dim);font:500 12px var(--mono);padding:5px 9px;border-radius:999px}
+.chip .ic{color:#9aa6b2}
+.lg{display:inline-flex;align-items:center;gap:4px;margin-left:8px;text-transform:none;letter-spacing:.3px}
+.lg svg{width:7px;height:12px}
+/* views */
+.view{flex:1;display:none;flex-direction:column;min-height:0}
+.view.on{display:flex}
+/* normal */
+#normal{align-items:center;justify-content:space-evenly;padding:0 20px 22px}
+#bigc{width:100%;max-width:370px;aspect-ratio:1}
+.status{text-align:center;margin-top:-6px}
+.status h1{font-size:24px;font-weight:650;letter-spacing:-.3px;transition:color .4s;display:flex;align-items:center;justify-content:center;gap:9px;white-space:nowrap}.status h1 .ic{width:22px;height:22px;stroke-width:2}
+.status p{margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--dim)}
+.pips{display:flex;gap:18px;justify-content:center;padding:12px 22px;border-radius:999px;background:var(--panel)}
+.pip{display:flex;flex-direction:column;align-items:center;gap:6px;font:600 10px var(--mono);color:var(--faint)}
+.pip b{width:12px;height:12px;border-radius:50%;background:var(--tile2);transition:background .08s,box-shadow .08s}
+.pip.lit b{background:var(--ff);box-shadow:0 0 12px var(--ff)}
+.pip.me{color:var(--ff)}
+.bottom{display:flex;gap:10px;width:100%}
+.btn{all:unset;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;border-radius:16px;font-weight:600;font-size:14px;background:var(--tile);color:var(--txt);transition:.15s}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:var(--acc);color:var(--ff);box-shadow:0 6px 24px rgba(200,255,77,.07)}
+.mock{font:600 8px var(--mono);letter-spacing:1px;color:#6a7682;text-transform:uppercase;background:var(--tile);border-radius:5px;padding:3px 6px;margin-left:4px}
+/* debug */
+#debug{padding:0 12px 12px;gap:7px;overflow-y:auto;scrollbar-width:none}
+#debug::-webkit-scrollbar{display:none}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));box-shadow:0 8px 24px rgba(0,0,0,.25);border-radius:16px;padding:8px 9px;position:relative;flex:none}
+.ct{display:flex;justify-content:space-between;align-items:center;font:600 10px var(--mono);letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.ct em{font-style:normal;color:var(--faint);letter-spacing:.5px;text-transform:none}
+.hero{display:flex;flex-direction:column;gap:9px;padding:10px}.hrow{display:flex;align-items:center;gap:11px}.hero .seg{flex:1}.hero .seg button{flex:1}.trow{display:flex;gap:8px}
+#mini{width:46px;height:46px;flex:none}
+.hero .st{flex:1;min-width:0}
+.hero .st b{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dSub{display:block;font:11px var(--mono);color:var(--dim);white-space:nowrap}
+.tgls{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row2 canvas{width:100%;aspect-ratio:1;display:block;max-height:150px;margin:0 auto}
+#tl{width:100%;height:100px;display:block}
+#ofs{width:100%;height:104px;display:block}
+.sprow{display:flex;align-items:center;gap:8px;margin-top:6px;background:var(--tile);border-radius:10px;padding:5px 8px}
+.spl{font:600 9px var(--mono);letter-spacing:.6px;color:var(--faint);text-transform:uppercase;white-space:nowrap}
+#spark{flex:1;min-width:0;height:26px;display:block}
+.spv{font:600 12px var(--mono);white-space:nowrap;min-width:46px;text-align:right}
+.numc{display:flex;flex-direction:column}
+.radc{display:flex;flex-direction:column}.radc canvas{margin:auto!important}
+.numc .nums{grid-template-columns:1fr 1fr;flex:1;gap:5px}
+.numc .num{display:flex;flex-direction:column;justify-content:center;padding:4px 8px}
+.numc .num b{font-size:14px}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.num{background:var(--tile);border-radius:10px;padding:6px 8px}
+.num small{display:block;font:600 9px var(--mono);letter-spacing:.8px;color:var(--faint);text-transform:uppercase}
+.num b{display:flex;align-items:center;gap:5px;font:600 15px var(--mono);margin-top:1px;color:var(--txt);white-space:nowrap}
+.num b u{text-decoration:none;font-size:10px;color:var(--dim);margin-left:2px;font-weight:500}
+.logc{display:flex;flex-direction:column;flex:1 0 96px;min-height:96px}
+#log{line-height:1.6;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;font:11px/1.55 var(--mono);color:#9aa6b2;mask-image:linear-gradient(180deg,transparent,#000 22%)}
+#log div{flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#log .t{color:#46525e}
+#log .rx{color:var(--blue)} #log .nd{color:var(--amber)} #log .cb{color:var(--ff)} #log .sy{color:#d59bff}
+.xbtn{all:unset;cursor:pointer;font:600 10px var(--mono);letter-spacing:.6px;color:var(--ff);background:var(--acc);padding:4px 9px 4px 7px;border-radius:8px;text-transform:none;display:inline-flex;align-items:center;gap:5px}
+/* screen flash overlay */
+#sflash{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(circle at 50% 40%,#fbffe8,#e9ffb0 60%,#c8ff4d)}
+.app.dbg #sflash{background:none;box-shadow:inset 0 0 0 3px #e9ffb0,inset 0 0 40px rgba(200,255,77,.8)}
+.toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#18210f;box-shadow:0 8px 30px rgba(0,0,0,.5);color:var(--ff);display:flex;align-items:center;gap:8px;font:600 12px var(--mono);padding:9px 14px;border-radius:10px;opacity:0;transition:.3s;z-index:6;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-restart" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4.2h-4.2"/></symbol>
+ <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/></symbol>
+ <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+ <symbol id="i-ble" viewBox="0 0 24 24"><path d="M7 7.5l10 9-5 4.5V3l5 4.5-10 9"/></symbol>
+ <symbol id="i-audio" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18 7a7 7 0 0 1 0 10"/></symbol>
+ <symbol id="i-torch" viewBox="0 0 24 24"><path d="M8 3h8v3.5l-2 3.5v11h-4V10L8 6.5z"/><path d="M8 6.5h8"/><path d="M12 13.5v2"/></symbol>
+ <symbol id="i-screen" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+ <symbol id="i-peers" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.8a3 3 0 0 1 0 5.4"/><path d="M17.5 14.5a5.5 5.5 0 0 1 3 4.5"/></symbol>
+ <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.3 2.3"/><path d="M9.5 3h5"/></symbol>
+ <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol>
+ <symbol id="i-sync" viewBox="0 0 24 24"><path d="M19.5 10.5A7.5 7.5 0 0 0 6 7.2"/><path d="M5.5 3.5v4h4"/><path d="M4.5 13.5A7.5 7.5 0 0 0 18 16.8"/><path d="M18.5 20.5v-4h-4"/></symbol>
+</svg>
+<div class="app" id="app">
+  <div class="top">
+    <div class="brand"><i></i>Firefly<span>Net</span><em class="mock">mock data</em></div>
+    <div class="seg" id="modeSeg"><button data-m="normal" class="on">Normal</button><button data-m="debug">Debug</button></div>
+  </div>
+
+  <!-- NORMAL -->
+  <section class="view on" id="normal">
+    <canvas id="bigc"></canvas>
+    <div class="status">
+      <h1><span id="nIco"></span><span id="nTitle">Syncing…</span></h1>
+      <div class="chips"><span class="chip"><svg class="ic s"><use href="#i-timer"/></svg><span id="cErr">—</span></span><span class="chip"><svg class="ic s"><use href="#i-peers"/></svg><span id="cPeers">4</span></span><span class="chip" id="cCh"></span><span class="chip" id="cFl"></span></div>
+    </div>
+    <div class="pips" id="pips"></div>
+    <div class="bottom">
+      <button class="btn" id="restartN"><svg class="ic"><use href="#i-restart"/></svg>Restart</button>
+      <button class="btn pri" id="toDbg">Debug view<svg class="ic"><use href="#i-arrow"/></svg></button>
+    </div>
+  </section>
+
+  <!-- DEBUG -->
+  <section class="view" id="debug">
+    <div class="card hero">
+      <div class="hrow"><canvas id="mini"></canvas>
+      <div class="st"><b><span id="dIco"></span><span id="dTitle">Syncing…</span></b><span id="dSub">t 0.0s  R 0.00</span></div></div>
+      <div class="trow">
+        <div class="seg sm" id="chSeg"><button data-v="ble" class="on"><svg class="ic s"><use href="#i-ble"/></svg>BLE</button><button data-v="audio"><svg class="ic s"><use href="#i-audio"/></svg>Audio</button></div>
+        <div class="seg sm" id="flSeg"><button data-v="torch" class="on"><svg class="ic s"><use href="#i-torch"/></svg>Torch</button><button data-v="screen"><svg class="ic s"><use href="#i-screen"/></svg>Screen</button></div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="card radc"><div class="ct">Radar<em>RSSI</em></div><canvas id="radar"></canvas></div>
+    <div class="card numc">
+        <div class="ct">Numbers<button class="xbtn" id="restartD"><svg class="ic s"><use href="#i-restart"/></svg>restart</button></div>
+        <div class="nums">
+          <div class="num"><small>sync err</small><b id="vErr">—</b></div>
+          <div class="num"><small>nudge</small><b id="vNud">—</b></div>
+          <div class="num"><small>packets/s</small><b id="vPps">—</b></div>
+          <div class="num"><small>avg rssi</small><b id="vRssi">—</b></div>
+          <div class="num"><small>torch lag</small><b id="vLag">—</b></div>
+          <div class="num"><small>channel</small><b id="vCh">BLE</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Offset vs group<em id="rval">R 0.00</em></div>
+      <canvas id="ofs"></canvas>
+      <div class="sprow"><span class="spl">spread · 30 s</span><canvas id="spark"></canvas><span class="spv" id="spv">—</span></div>
+    </div>
+    <div class="card"><div class="ct">Timeline<em id="lgd"></em></div><canvas id="tl"></canvas></div>
+    <div class="card logc">
+      <div class="ct">Event log<button class="xbtn" id="exp"><svg class="ic s"><use href="#i-download"/></svg>Export CSV</button></div>
+      <div id="log"></div>
+    </div>
+  </section>
+
+  <div id="sflash"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ---------------- shared simulation ----------------
+const P = 1000;                       // flash period ms (~1 Hz)
+const NAMES = ['You','B','C','D','E'];
+const COLORS = ['#c8ff4d','#5ad1ff','#ff9f5a','#d59bff','#ff6b9a'];
+const LOCK_MS = 20;
+const S = { mode:'normal', ch:'ble', fl:'torch' };
+let sim;
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const gauss = ()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const wrap = d => ((d % P) + P*1.5) % P - P/2;  // to [-P/2,P/2)
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+function newSim(){
+  const phones = NAMES.map((n,i)=>({
+    name:n, phase:rnd(0,P), rate:1+rnd(-0.01,0.01), lag: i===0?131:Math.round(rnd(90,260)),
+    rssiBase: i===0?0:[-48,-59,-67,-78][i-1], rssi:-60, rssiS: i===0?0:[-48,-59,-67,-78][i-1], rdist:null, rb:0, lastLight:-1e9, lastNudge:0, cmdFired:false
+  }));
+  return { t:0, phones, flashes:[], cmds:[], nudges:[], rxTimes:[], log:[], nextTick:0, errHist:[], spreadAt:0, spread:[], ofsS:null, R:0, err:400, logRxAt:0 };
+}
+
+function addLog(cls, msg){
+  const d = new Date(Date.now());
+  const ts = d.toTimeString().slice(0,8)+'.'+String(d.getMilliseconds()).padStart(3,'0');
+  sim.log.push({ts, cls, msg, t:sim.t});
+  if (sim.log.length>400) sim.log.shift();
+  logDirty = true;
+}
+
+function circStats(){
+  let sx=0, sy=0;
+  for (const p of sim.phones){ const a=p.phase/P*2*Math.PI; sx+=Math.cos(a); sy+=Math.sin(a); }
+  const n=sim.phones.length, R=Math.hypot(sx,sy)/n, mean=((Math.atan2(sy,sx)/(2*Math.PI))*P+P)%P;
+  let se=0; for (const p of sim.phones){ const d=wrap(p.phase-mean); se+=d*d; }
+  return {R, mean, err:Math.sqrt(se/n)};
+}
+
+function step(dt){
+  sim.t += dt;
+  const t = sim.t;
+  for (const [i,p] of sim.phones.entries()){
+    const prev = p.phase;
+    p.phase += dt*p.rate;
+    // own torch command fires early by the calibrated lag so light lands on the beat
+    if (i===0 && prev < P-p.lag && p.phase >= P-p.lag) sim.cmds.push(t);
+    if (p.phase >= P){ p.phase -= P; p.lastLight = t; sim.flashes.push({i,t}); }
+    p.rssi = p.rssiBase + Math.sin(t/2600 + i*2)*3 + gauss()*1.2;
+    p.rssiS += (p.rssi - p.rssiS)*(1-Math.exp(-dt/1200));   // EMA, tau 1.2 s (radar)
+  }
+  // radio tick: BLE adverts every 100 ms, audio chirps every 500 ms
+  const tick = S.ch==='ble' ? 100 : 500;
+  const noise = S.ch==='ble' ? 30 : 10;
+  const gain  = S.ch==='ble' ? 0.03 : 0.14;
+  const loss  = S.ch==='ble' ? 0.18 : 0.08;
+  if (t >= sim.nextTick){
+    sim.nextTick = t + tick + rnd(-8,8);
+    for (const [i,p] of sim.phones.entries()){
+      let sx=0, sy=0, n=0;
+      for (const [j,q] of sim.phones.entries()){
+        if (i===j || Math.random()<loss) continue;
+        const d = wrap(q.phase - p.phase) + gauss()*noise;   // "flash at T" timestamp → phase diff
+        const a = d/P*2*Math.PI; sx+=Math.cos(a); sy+=Math.sin(a); n++;
+        if (i===0){
+          sim.rxTimes.push(t);
+          if (t - sim.logRxAt > 420 && Math.random()<0.35){ sim.logRxAt=t;
+            addLog('rx', `rx ${q.name}  ${S.ch==='ble'?'adv':'chirp'} φ=${(q.phase/P).toFixed(3)}  rssi ${S.ch==='ble'?Math.round(q.rssi):'—'}  Δ${d>=0?'+':''}${d.toFixed(0)}ms`);
+          }
+        }
+      }
+      if (!n) continue;
+      const md = Math.atan2(sy,sx)/(2*Math.PI)*P;
+      const nudge = clamp(md*gain*(1+ (sim.err>150?0.4:0)), -60, 60);
+      p.phase = (p.phase + nudge + P) % P;
+      if (i===0){ p.lastNudge = nudge; sim.nudges.push({t, v:nudge});
+        if (Math.abs(nudge)>1.5 || Math.random()<0.15) addLog('nd', `nudge ${nudge>=0?'+':''}${nudge.toFixed(1)}ms  (n=${n}, k=${gain})`);
+      }
+    }
+  }
+  const st = circStats(); sim.R=st.R; sim.err=st.err; sim.mean=st.mean;
+  if (t>=sim.spreadAt){ sim.spreadAt=t+200; sim.spread.push({t,v:st.err}); while(sim.spread.length && sim.spread[0].t<t-30000) sim.spread.shift(); }
+  if (!sim.locked && st.err<LOCK_MS){ sim.locked=true; addLog('sy', `LOCKED ±${st.err.toFixed(0)}ms  R=${st.R.toFixed(3)}  @${(t/1000).toFixed(1)}s`); }
+  if (sim.locked && st.err>LOCK_MS*2.5){ sim.locked=false; addLog('sy','lock lost → resync'); }
+  // trim history (keep 6 s)
+  const cut = t-6000;
+  while (sim.flashes.length && sim.flashes[0].t<cut) sim.flashes.shift();
+  while (sim.cmds.length && sim.cmds[0]<cut) sim.cmds.shift();
+  while (sim.nudges.length && sim.nudges[0].t<cut) sim.nudges.shift();
+  while (sim.rxTimes.length && sim.rxTimes[0]<t-1000) sim.rxTimes.shift();
+}
+
+function restart(){
+  sim = newSim();
+  addLog('sy','session start · mesh clock random · channel '+S.ch.toUpperCase());
+  addLog('cb','calib torch lag = 131ms  (camera, n=12, σ 6ms)');
+  addLog('cb','screen flash lag = 34ms  (vsync est.)');
+  addLog('sy','scanning… 4 peers found (B C D E)');
+}
+
+// ---------------- canvas helpers ----------------
+const DPR = Math.min(window.devicePixelRatio||1, 3);
+function fit(c){ const r=c.getBoundingClientRect(); const w=Math.round(r.width*DPR), h=Math.round(r.height*DPR);
+  if (c.width!==w||c.height!==h){ c.width=w; c.height=h; } const x=c.getContext('2d'); x.setTransform(DPR,0,0,DPR,0,0); return [x,r.width,r.height]; }
+const $ = id=>document.getElementById(id);
+function lockColor(err){ // red → amber → green
+  const q = clamp(1 - (err-12)/220, 0, 1);
+  const stops = [[255,90,90],[255,184,74],[200,255,77]];
+  const k = q*2, i=Math.min(1,Math.floor(k)), f=k-i, a=stops[i], b=stops[i+1];
+  return a.map((v,j)=>Math.round(v+(b[j]-v)*f));
+}
+const rgb=(c,a=1)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const glowOf = (p)=> Math.exp(-Math.max(0, sim.t - p.lastLight)/170);
+const lockFrac = ()=> clamp(1 - (sim.err-12)/260, 0, 1);
+
+// ---------------- normal view ----------------
+function drawBig(){
+  const [x,w,h] = fit($('bigc')); x.clearRect(0,0,w,h);
+  const cx=w/2, cy=h/2, R=Math.min(w,h)/2;
+  const me=sim.phones[0], g=glowOf(me), col=lockColor(sim.err), lf=lockFrac();
+  // outer halo
+  const halo=x.createRadialGradient(cx,cy,R*0.15,cx,cy,R*0.98);
+  halo.addColorStop(0,`rgba(200,255,77,${0.10+0.45*g})`); halo.addColorStop(0.55,`rgba(200,255,77,${0.03+0.12*g})`); halo.addColorStop(1,'rgba(200,255,77,0)');
+  x.fillStyle=halo; x.fillRect(0,0,w,h);
+  // ticks
+  const rr=R*0.80;
+  for (let k=0;k<60;k++){ const a=k/60*2*Math.PI-Math.PI/2, L=k%5?4:9;
+    x.strokeStyle=k%5?'rgba(255,255,255,.07)':'rgba(255,255,255,.16)'; x.lineWidth=1.2;
+    x.beginPath(); x.moveTo(cx+Math.cos(a)*(rr+10),cy+Math.sin(a)*(rr+10)); x.lineTo(cx+Math.cos(a)*(rr+10+L),cy+Math.sin(a)*(rr+10+L)); x.stroke(); }
+  // ring track + fill
+  x.lineCap='round'; x.lineWidth=7;
+  x.strokeStyle='rgba(255,255,255,.06)'; x.beginPath(); x.arc(cx,cy,rr,0,2*Math.PI); x.stroke();
+  x.shadowColor=rgb(col,.9); x.shadowBlur=18; x.strokeStyle=rgb(col);
+  x.beginPath(); x.arc(cx,cy,rr,-Math.PI/2,-Math.PI/2+Math.max(0.02,lf)*2*Math.PI); x.stroke(); x.shadowBlur=0;
+  // peers on ring at relative phase (collapse to top when synced)
+  for (let i=1;i<sim.phones.length;i++){ const p=sim.phones[i]; const d=wrap(p.phase-me.phase); const a=d/P*2*Math.PI-Math.PI/2;
+    const pg=glowOf(p); const px=cx+Math.cos(a)*(rr+30), py=cy+Math.sin(a)*(rr+30);
+    x.fillStyle=`rgba(200,255,77,${0.35+0.65*pg})`; x.shadowColor='#c8ff4d'; x.shadowBlur=4+14*pg;
+    x.beginPath(); x.arc(px,py,3.5+2*pg,0,2*Math.PI); x.fill(); x.shadowBlur=0; }
+  // core
+  const cr=R*0.42*(1+0.07*g);
+  const core=x.createRadialGradient(cx,cy,0,cx,cy,cr);
+  core.addColorStop(0,`rgba(250,255,225,${0.25+0.75*g})`); core.addColorStop(0.35,`rgba(215,255,110,${0.18+0.7*g})`); core.addColorStop(1,`rgba(160,230,50,${0.02+0.1*g})`);
+  x.fillStyle=core; x.shadowColor='rgba(200,255,77,.9)'; x.shadowBlur=30+60*g; x.beginPath(); x.arc(cx,cy,cr,0,2*Math.PI); x.fill(); x.shadowBlur=0;
+    // center readout
+  x.fillStyle=`rgba(5,10,5,${0.35+0.5*g})`; x.textAlign='center'; x.textBaseline='middle';
+  x.fillStyle = g>0.4?'rgba(20,30,8,.85)':'rgba(230,240,220,.85)';
+  x.font=`600 ${Math.round(R*0.13)}px ui-monospace,Menlo,monospace`; x.fillText(Math.round(lf*100)+'%', cx, cy-4);
+  x.font=`600 ${Math.round(R*0.05)}px ui-monospace,Menlo,monospace`; x.fillStyle=g>0.4?'rgba(20,30,8,.6)':'rgba(200,210,200,.45)'; x.fillText('LOCK', cx, cy+R*0.1);
+}
+const pipsEl=$('pips');
+NAMES.forEach((n,i)=>{ const d=document.createElement('div'); d.className='pip'+(i?'':' me'); d.innerHTML='<b></b>'+n; pipsEl.appendChild(d); });
+function statusText(){
+  const n=sim.phones.length-1;
+  return sim.locked ? {h:`Locked ±${Math.max(1,Math.round(sim.err))} ms`, c:'var(--ff)'}
+                    : {h:`Syncing… ${n} phones nearby`, c: rgb(lockColor(sim.err))};
+}
+
+// ---------------- debug view ----------------
+function drawMini(){
+  const [x,w,h]=fit($('mini')); x.clearRect(0,0,w,h); const g=glowOf(sim.phones[0]), cx=w/2, cy=h/2, col=lockColor(sim.err);
+  x.lineWidth=3; x.lineCap='round'; x.strokeStyle='rgba(255,255,255,.07)'; x.beginPath(); x.arc(cx,cy,w/2-3,0,2*Math.PI); x.stroke();
+  x.strokeStyle=rgb(col); x.shadowColor=rgb(col); x.shadowBlur=8; x.beginPath(); x.arc(cx,cy,w/2-3,-Math.PI/2,-Math.PI/2+Math.max(.03,lockFrac())*2*Math.PI); x.stroke();
+  const gr=x.createRadialGradient(cx,cy,0,cx,cy,w*0.34); gr.addColorStop(0,`rgba(250,255,220,${0.2+0.8*g})`); gr.addColorStop(1,`rgba(200,255,77,${0.04+0.2*g})`);
+  x.fillStyle=gr; x.shadowColor='#c8ff4d'; x.shadowBlur=6+26*g; x.beginPath(); x.arc(cx,cy,w*0.3*(1+.08*g),0,2*Math.PI); x.fill(); x.shadowBlur=0;
+}
+let radarT=0;
+function drawRadar(){
+  const [x,w,h]=fit($('radar')); x.clearRect(0,0,w,h); const cx=w/2, cy=h/2, R=w/2-6;
+  x.strokeStyle='rgba(200,255,77,.07)'; x.lineWidth=1;
+  for (const f of [.33,.66,1]){ x.beginPath(); x.arc(cx,cy,R*f,0,2*Math.PI); x.stroke(); }
+  x.beginPath(); x.moveTo(cx-R,cy); x.lineTo(cx+R,cy); x.moveTo(cx,cy-R); x.lineTo(cx,cy+R); x.strokeStyle='rgba(200,255,77,.05)'; x.stroke();
+  // sweep
+  const sa=(performance.now()/1600)%(2*Math.PI);
+  const sw=x.createConicGradient? x.createConicGradient(sa-0.9,cx,cy):null;
+  if (sw){ sw.addColorStop(0,'rgba(200,255,77,0)'); sw.addColorStop(0.14,'rgba(200,255,77,.13)'); sw.addColorStop(0.1401,'rgba(200,255,77,0)'); sw.addColorStop(1,'rgba(200,255,77,0)');
+    x.fillStyle=sw; x.beginPath(); x.arc(cx,cy,R,0,2*Math.PI); x.fill(); }
+  x.font='8px ui-monospace,Menlo,monospace'; x.fillStyle='rgba(125,138,150,.6)'; x.textAlign='left';
+  {const la=0.34, c=Math.cos(la), sn=Math.sin(la); x.textAlign='center'; x.fillText('-55',cx+c*R*.33,cy+sn*R*.33+9); x.fillText('-75',cx+c*R*.66,cy+sn*R*.66+9); x.fillText('-95',cx+c*R*.97-6,cy+sn*R*.97+9); x.textAlign='left';}
+  const now=performance.now(), fdt=Math.min(100, now-(radarT||now)); radarT=now;
+  const kPos=1-Math.exp(-fdt/350), kB=1-Math.exp(-fdt/45);
+  const blip=(px,py,col,p)=>{
+    const g=glowOf(p); p.rb += (g - p.rb)*kB;                       // smoothed brightness
+    const e=Math.exp(-Math.max(0, sim.t - p.lastLight)/520);        // ripple envelope
+    x.lineWidth=1;
+    x.globalAlpha=0.6*e; x.strokeStyle=col; x.beginPath(); x.arc(px,py,7+(1-e)*10,0,2*Math.PI); x.stroke();   // ripple
+    x.globalAlpha=0.35+0.3*p.rb; x.beginPath(); x.arc(px,py,7,0,2*Math.PI); x.stroke();                          // thin ring
+    x.globalAlpha=0.8+0.2*p.rb; x.fillStyle=col; x.shadowColor=col; x.shadowBlur=2+9*p.rb;
+    x.beginPath(); x.arc(px,py,4,0,2*Math.PI); x.fill(); x.shadowBlur=0; x.globalAlpha=1;
+  };
+  for (let i=1;i<sim.phones.length;i++){ const p=sim.phones[i];
+    const target=clamp((-p.rssiS-35)/60,0.3,0.92)*R, a=i*1.37+0.5;
+    if (p.rdist==null) p.rdist=target; p.rdist += (target-p.rdist)*kPos;   // per-frame glide
+    const px=cx+Math.cos(a)*p.rdist, py=cy+Math.sin(a)*p.rdist;
+    blip(px,py,COLORS[i],p);
+    const ca=Math.cos(a), sa2=Math.sin(a);
+    x.fillStyle='rgba(232,238,242,.75)'; x.font='600 8.5px ui-monospace,Menlo,monospace';
+    x.textAlign = ca>0.35?'left':ca<-0.35?'right':'center';
+    x.fillText(p.name, px+ca*12, py+sa2*12+3); x.textAlign='left';
+  }
+  blip(cx,cy,'#c8ff4d',sim.phones[0]);
+}
+let ofsT=0;
+function drawOffsets(){
+  const [x,w,h]=fit($('ofs')); x.clearRect(0,0,w,h);
+  const now=performance.now(), fdt=Math.min(100, now-(ofsT||now)); ofsT=now; const k=1-Math.exp(-fdt/220);
+  const RANGE=120, L=34, Rm=10, top=14, bot=13, n=sim.phones.length, rh=(h-top-bot)/n;
+  const X0=L+(w-L-Rm)/2, half=(w-L-Rm)/2, X=v=>X0+clamp(v,-RANGE,RANGE)/RANGE*half;
+  if (!sim.ofsS) sim.ofsS=sim.phones.map(()=>0);
+  // tolerance band ±20 ms
+  x.fillStyle='rgba(200,255,77,.06)'; x.fillRect(X(-20),top-2,X(20)-X(-20),h-top-bot+4);
+  // ticks
+  x.font='8px ui-monospace,Menlo,monospace'; x.textAlign='center';
+  for (const v of [-100,-50,50,100]){ const xx=X(v); x.strokeStyle='rgba(255,255,255,.04)'; x.lineWidth=1; x.beginPath(); x.moveTo(xx,top-2); x.lineTo(xx,h-bot+2); x.stroke();
+    x.fillStyle='rgba(125,138,150,.55)'; x.fillText((v>0?'+':'−')+Math.abs(v),xx,h-2); }
+  x.strokeStyle='rgba(232,238,242,.28)'; x.beginPath(); x.moveTo(X0,top-4); x.lineTo(X0,h-bot+2); x.stroke();
+  x.fillStyle='rgba(232,238,242,.6)'; x.fillText('0',X0,h-2);
+  x.font='600 8px ui-monospace,Menlo,monospace'; x.fillStyle='rgba(125,138,150,.75)';
+  x.textAlign='left'; x.fillText('EARLY',L,8); x.textAlign='right'; x.fillText('LATE',w-Rm,8);
+  x.textAlign='center'; x.fillStyle='rgba(157,255,106,.55)'; x.fillText('±20 ok',X0,8);
+  sim.phones.forEach((p,i)=>{
+    const raw = -wrap(p.phase - (sim.mean||0));          // + = flashes later than group mean
+    sim.ofsS[i] += (raw - sim.ofsS[i])*k; const v=sim.ofsS[i];
+    const y=top+rh*i+rh/2, bh=Math.min(8,rh-5), xe=X(v), over=Math.abs(v)>RANGE;
+    x.textAlign='left'; x.fillStyle=COLORS[i]; x.font='600 9px ui-monospace,Menlo,monospace'; x.fillText(p.name,2,y+3);
+    x.fillStyle='rgba(255,255,255,.035)'; x.beginPath(); x.roundRect(L,y-bh/2,w-L-Rm,bh,bh/2); x.fill();
+    const x1=Math.min(X0,xe), bw=Math.max(2,Math.abs(xe-X0));
+    x.fillStyle=COLORS[i]; x.globalAlpha=0.9; x.shadowColor=COLORS[i]; x.shadowBlur=6;
+    x.beginPath(); x.roundRect(x1,y-bh/2,bw,bh,bh/2); x.fill(); x.shadowBlur=0; x.globalAlpha=1;
+    if (over){ // overflow chevron at the clamped end
+      const d=Math.sign(v), cx=xe+d*5; x.strokeStyle=COLORS[i]; x.lineWidth=1.6; x.lineCap='round'; x.lineJoin='round';
+      x.beginPath(); x.moveTo(cx-d*2.5,y-3.5); x.lineTo(cx+d*1.5,y); x.lineTo(cx-d*2.5,y+3.5); x.stroke(); }
+    // value label just beyond bar end; flips inside if it would leave the plot
+    const lbl=(v>=0?'+':'−')+Math.abs(v).toFixed(0)+' ms'; x.font='600 9px ui-monospace,Menlo,monospace';
+    const tw=x.measureText(lbl).width, gap=over?11:5; let lx, al;
+    if (v>=0){ lx=xe+gap; al='left'; if (lx+tw>w-Rm){ lx=X0-5; al='right'; } }
+    else { lx=xe-gap; al='right'; if (lx-tw<L){ lx=X0+5; al='left'; } }
+    x.textAlign=al; x.fillStyle='rgba(232,238,242,.9)'; x.fillText(lbl,lx,y+3);
+  });
+}
+function drawSpark(){
+  const [x,w,h]=fit($('spark')); x.clearRect(0,0,w,h); const sp=sim.spread, t=sim.t, MAX=200;
+  const X=tt=>w*(1-(t-tt)/30000), Y=v=>h-2-(clamp(v,0,MAX)/MAX)*(h-4);
+  x.fillStyle='rgba(200,255,77,.07)'; x.fillRect(0,Y(20),w,h-2-Y(20));
+  x.strokeStyle='rgba(200,255,77,.25)'; x.setLineDash([2,3]); x.lineWidth=1; x.beginPath(); x.moveTo(0,Y(20)); x.lineTo(w,Y(20)); x.stroke(); x.setLineDash([]);
+  if (sp.length<2) return;
+  const col=lockColor(sim.err);
+  x.beginPath(); sp.forEach((d,i)=>{ const xx=X(d.t), yy=Y(d.v); i?x.lineTo(xx,yy):x.moveTo(xx,yy); });
+  const g=x.createLinearGradient(0,0,w,0); g.addColorStop(0,'rgba(255,90,90,.9)'); g.addColorStop(1,rgb(col));
+  x.strokeStyle=g; x.lineWidth=1.6; x.lineJoin='round'; x.stroke();
+  x.lineTo(X(sp[sp.length-1].t),h); x.lineTo(X(sp[0].t),h); x.closePath(); x.fillStyle='rgba(200,255,77,.06)'; x.fill();
+  const last=sp[sp.length-1]; x.fillStyle=rgb(col); x.beginPath(); x.arc(Math.min(w-2.5,X(last.t)),Y(last.v),2.5,0,2*Math.PI); x.fill();
+}
+function drawTimeline(){
+  const [x,w,h]=fit($('tl')); x.clearRect(0,0,w,h);
+  const L=34, Rp=6, top=4, bot=16, lanes=NAMES.length, lh=(h-top-bot)/lanes, span=5000, t=sim.t;
+  const X = tt => L + (w-L-Rp)*(1-(t-tt)/span);
+  // grid seconds
+  x.font='8px ui-monospace,Menlo,monospace'; x.textAlign='center';
+  for (let s=0;s<=5;s++){ const xx=L+(w-L-Rp)*(s/5); x.strokeStyle='rgba(255,255,255,.035)'; x.beginPath(); x.moveTo(xx,top); x.lineTo(xx,h-bot); x.stroke();
+    x.fillStyle='rgba(125,138,150,.6)'; x.fillText(s===5?'now':`-${5-s}s`, Math.min(xx,w-12), h-4); }
+  NAMES.forEach((n,i)=>{ const y=top+lh*i+lh/2;
+    x.fillStyle=i?'rgba(10,15,20,.0)':'rgba(200,255,77,.04)'; x.fillRect(L,top+lh*i+1,w-L-Rp,lh-2);
+    x.textAlign='left'; x.fillStyle=COLORS[i]; x.font='600 9px ui-monospace,Menlo,monospace'; x.fillText(n,4,y+3);
+    x.strokeStyle='rgba(255,255,255,.04)'; x.beginPath(); x.moveTo(L,y); x.lineTo(w-Rp,y); x.stroke(); });
+  // own nudges (lane 0, amber bars proportional)
+  const y0=top+lh/2;
+  for (const nd of sim.nudges){ if (t-nd.t>span) continue; const xx=X(nd.t), hh=clamp(Math.abs(nd.v)/60,0.04,1)*(lh/2-2);
+    x.fillStyle='rgba(255,184,74,.75)'; x.fillRect(xx-0.75, nd.v<0? y0 : y0-hh, 1.5, hh); }
+  // own torch commands (hollow ticks) + light-on
+  for (const c of sim.cmds){ if (t-c>span) continue; const xx=X(c); x.strokeStyle='rgba(232,238,242,.75)'; x.lineWidth=1.2; x.strokeRect(xx-2.5,y0-lh/2+3,5,lh-6); }
+  // flashes
+  for (const f of sim.flashes){ if (t-f.t>span) continue; const xx=X(f.t), y=top+lh*f.i+lh/2;
+    x.fillStyle=COLORS[f.i]; x.shadowColor=COLORS[f.i]; x.shadowBlur=8; x.fillRect(xx-2,y-lh/2+3,4,lh-6); x.shadowBlur=0; }
+  // own lag connectors
+  for (const c of sim.cmds){ if (t-c>span) continue; const xx=X(c), x2=X(c+sim.phones[0].lag); if (c+sim.phones[0].lag>t) continue;
+    x.strokeStyle='rgba(200,255,77,.35)'; x.setLineDash([2,2]); x.beginPath(); x.moveTo(xx+2.5,y0); x.lineTo(x2-2,y0); x.stroke(); x.setLineDash([]); }
+  // legend
+  x.textAlign='right'; x.font='8px ui-monospace,Menlo,monospace'; x.fillStyle='rgba(125,138,150,.0)';
+}
+$('lgd').innerHTML =
+ '<span class="lg"><svg viewBox="0 0 7 12"><rect x="1" y="1" width="5" height="10" rx="1.2" fill="none" stroke="#e8eef2" stroke-width="1.3"/></svg>cmd</span>'+
+ '<span class="lg"><svg viewBox="0 0 7 12"><rect x="1" y="1" width="5" height="10" rx="1.2" fill="#c8ff4d"/></svg>light</span>'+
+ '<span class="lg"><svg viewBox="0 0 7 12"><path d="M3.5 2v8" stroke="#ffb84a" stroke-width="2" stroke-linecap="round"/></svg>nudge</span>'+
+ '<span class="lg" style="color:#56626e">5 s</span>';
+const ICO=(n,c='ic')=>`<svg class="${c}"><use href="#i-${n}"/></svg>`;
+
+let logDirty=true;
+function renderLog(){
+  if (!logDirty) return; logDirty=false;
+  const el=$('log'); const rows=sim.log.slice(-14);
+  el.innerHTML = rows.map(r=>`<div><span class="t">${r.ts.slice(3)}</span> <span class="${r.cls}">${r.msg}</span></div>`).join('');
+}
+function fmtSigned(v){ return (v>=0?'+':'−')+Math.abs(v).toFixed(0); }
+
+// ---------------- frame loop ----------------
+let lastT=performance.now(), acc=0, uiAt=0, pipState=[], icoState='', chipState='';
+function frame(now){
+  let dt=Math.min(100, now-lastT); lastT=now; acc+=dt;
+  while (acc>=5){ step(5); acc-=5; }
+  const g=glowOf(sim.phones[0]);
+  $('sflash').style.opacity = S.fl==='screen' ? (S.mode==='normal'? 0.9*g : g) : 0;
+  if (S.mode==='normal'){
+    drawBig();
+    pipsEl.querySelectorAll('.pip').forEach((el,i)=>{ const on=glowOf(sim.phones[i])>0.35; if (pipState[i]!==on){ el.classList.toggle('lit',on); pipState[i]=on; } });
+  } else { drawMini(); drawRadar(); drawOffsets(); drawSpark(); drawTimeline(); renderLog(); }
+  if (now-uiAt>120){ uiAt=now;
+    const st=statusText(); const ch=S.ch==='ble'?'BLE':'Audio';
+    $('nTitle').textContent=st.h; $('nTitle').parentNode.style.color=st.c; $('dTitle').textContent=sim.locked?st.h:`Syncing · ${sim.phones.length-1} peers`; $('dTitle').parentNode.style.color=st.c;
+    const ik=sim.locked?'lock':'sync'; if (icoState!==ik){ icoState=ik; $('nIco').innerHTML=ICO(ik,'ic'+(sim.locked?'':' spin')); $('dIco').innerHTML=ICO(ik,'ic s'+(sim.locked?'':' spin')); $('nIco').style.display='flex'; $('dIco').style.display='flex'; }
+    const chk=S.ch+S.fl; if (chipState!==chk){ chipState=chk;
+      $('cCh').innerHTML=ICO(S.ch==='ble'?'ble':'audio','ic s')+(S.ch==='ble'?'BLE':'Audio'); $('cFl').innerHTML=ICO(S.fl,'ic s')+(S.fl==='torch'?'Torch':'Screen');
+      $('vCh').innerHTML=S.ch==='ble'?'<span style="color:var(--blue);display:flex;align-items:center;gap:4px">'+ICO('ble','ic s')+'BLE</span>':'<span style="color:#d59bff;display:flex;align-items:center;gap:4px">'+ICO('audio','ic s')+'Audio</span>'; }
+    $('cErr').textContent=`±${Math.round(sim.err)} ms`; $('cPeers').textContent=`${sim.phones.length-1} peers`;
+    $('dSub').textContent=`t ${(sim.t/1000).toFixed(1)}s   R ${sim.R.toFixed(3)}`;
+    $('rval').textContent='R '+sim.R.toFixed(2); $('spv').textContent='±'+Math.round(sim.err)+' ms'; $('spv').style.color=sim.err<LOCK_MS?'var(--ff)':sim.err<80?'var(--amber)':'var(--red)';
+    const errC = sim.err<LOCK_MS?'var(--ff)':sim.err<80?'var(--amber)':'var(--red)';
+    $('vErr').innerHTML=`<span style="color:${errC}">${Math.round(sim.err)}</span><u>ms</u>`;
+    {const v=sim.phones[0].lastNudge; $('vNud').innerHTML=`${v>=0?'+':'−'}${Math.abs(v).toFixed(Math.abs(v)<10?1:0)}<u>ms</u>`;}
+    $('vPps').innerHTML=`${sim.rxTimes.length}<u>/s</u>`;
+    const avg=sim.phones.slice(1).reduce((a,p)=>a+p.rssi,0)/(sim.phones.length-1);
+    $('vRssi').innerHTML=S.ch==='ble'?`${Math.round(avg)}<u>dBm</u>`:`—<u>n/a</u>`;
+    $('vLag').innerHTML=S.fl==='torch'?`${sim.phones[0].lag}<u>ms</u>`:`34<u>ms</u>`;
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------------- controls ----------------
+function setMode(m){ S.mode=m; $('app').classList.toggle('dbg',m==='debug');
+  $('normal').classList.toggle('on',m==='normal'); $('debug').classList.toggle('on',m==='debug');
+  $('modeSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); logDirty=true; }
+$('modeSeg').onclick=e=>{ const b=e.target.closest('button'); if(b) setMode(b.dataset.m); };
+$('toDbg').onclick=()=>setMode('debug');
+function segBind(id,key,label){ $(id).onclick=e=>{ const b=e.target.closest('button'); if(!b||S[key]===b.dataset.v) return; S[key]=b.dataset.v;
+  $(id).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); addLog('sy',`${label} → ${b.textContent.trim()}`); }; }
+segBind('chSeg','ch','channel'); segBind('flSeg','fl','flash output');
+$('restartN').onclick=$('restartD').onclick=()=>{ restart(); toast(ICO('restart','ic s')+'Restarted, random phases'); };
+let tt; function toast(m){ const el=$('toast'); el.innerHTML=m; el.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),1600); }
+$('exp').onclick=()=>{
+  const csv='time,sim_ms,type,message\n'+sim.log.map(r=>`${r.ts},${r.t.toFixed(0)},${r.cls},"${r.msg.replace(/"/g,'""')}"`).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='firefly-mock-log.csv'; a.click();
+  toast(ICO('download','ic s')+`Exported ${sim.log.length} rows (mock)`);
+};
+
+const qs=new URLSearchParams(location.search);
+window.__ff=()=>({t:sim.t,glow:glowOf(sim.phones[0]),err:sim.err});
+restart();
+if (qs.get('mode')==='debug') setMode('debug');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

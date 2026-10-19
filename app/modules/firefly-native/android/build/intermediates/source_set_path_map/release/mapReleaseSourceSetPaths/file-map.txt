@@ -1,0 +1,7 @@
+expo.modules.fireflynative.firefly-native-pngs-0 /workspace/lumisync/app/modules/firefly-native/android/build/generated/res/pngs/release
+expo.modules.fireflynative.firefly-native-resValues-1 /workspace/lumisync/app/modules/firefly-native/android/build/generated/res/resValues/release
+expo.modules.fireflynative.firefly-native-mergeReleaseResources-2 /workspace/lumisync/app/modules/firefly-native/android/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+expo.modules.fireflynative.firefly-native-mergeReleaseResources-3 /workspace/lumisync/app/modules/firefly-native/android/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+expo.modules.fireflynative.firefly-native-release-4 /workspace/lumisync/app/modules/firefly-native/android/build/intermediates/merged_res/release/mergeReleaseResources
+expo.modules.fireflynative.firefly-native-main-5 /workspace/lumisync/app/modules/firefly-native/android/src/main/res
+expo.modules.fireflynative.firefly-native-release-6 /workspace/lumisync/app/modules/firefly-native/android/src/release/res
