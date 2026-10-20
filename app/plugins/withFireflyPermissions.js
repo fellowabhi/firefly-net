@@ -12,7 +12,14 @@ module.exports = function withFireflyPermissions(config) {
     add('android.permission.BLUETOOTH_ADVERTISE');
     add('android.permission.BLUETOOTH_CONNECT');
     add('android.permission.RECORD_AUDIO');
-    m['uses-feature'] = [...(m['uses-feature'] || []), { $: { 'android:name': 'android.hardware.bluetooth_le', 'android:required': 'true' } }];
+    // foldables (e.g. Tecno Phantom V Fold): handle fold/unfold, density and display changes in-place
+    // instead of recreating the Activity (which re-inits camera + native module mid-run)
+    for (const app of m.application || []) for (const act of app.activity || []) if (act.$['android:name'] === '.MainActivity') {
+      const cur = new Set((act.$['android:configChanges'] || '').split('|').filter(Boolean));
+      ['keyboard', 'keyboardHidden', 'orientation', 'screenSize', 'screenLayout', 'uiMode', 'smallestScreenSize', 'density', 'fontScale', 'layoutDirection', 'navigation', 'colorMode'].forEach(x => cur.add(x));
+      act.$['android:configChanges'] = [...cur].join('|'); act.$['android:resizeableActivity'] = 'true';
+    }
+    m['uses-feature'] = [...(m['uses-feature'] || []), { $: { 'android:name': 'android.hardware.bluetooth_le', 'android:required': 'false' } }];
     return cfg;
   });
 };
